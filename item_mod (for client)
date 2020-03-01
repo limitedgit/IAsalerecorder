@@ -1,0 +1,102 @@
+#!/bin/bash
+
+echo to modify item enter m, to delete item enter d, to add new item enter a, to see items enter s
+echo to place orders enter po, to view orders enter vo
+read varname
+
+if [ $varname == 's' ]
+then
+	curl -i https://ancient-bastion-34942.herokuapp.com/items	
+fi
+
+if [ $varname == 'a' ]
+then
+	echo please enter in name of item to add
+	read name
+	echo please enter in description
+	read desc
+	echo please enter in username
+	read user
+	echo please enter in password
+	read password
+        curl -i -u $user:$password -H "Content-Type: application/json" -X POST -d '{"name":"'"$name"'", "info":"'"$desc"'"}' https://ancient-bastion-34942.herokuapp.com/items
+
+fi
+
+if [ $varname == 'd' ]
+then
+	echo enter the id of item to delete
+	curl -i https://ancient-bastion-34942.herokuapp.com/items
+	read id
+	echo are you sure you want to delete
+	curl -i https://ancient-bastion-34942.herokuapp.com/items/$id
+	echo enter yes to confirm
+	read confirm
+	if [ $confirm == 'yes' ] 
+	then
+		echo please enter in username
+        	read user
+        	echo please enter in password
+        	read password
+		curl -i -u $user:$password  -X DELETE  https://ancient-bastion-34942.herokuapp.com/items/$id
+	fi
+fi
+
+if [ $varname == 'm' ]
+then
+	echo please enter in username
+        read user
+        echo please enter in password
+        read password
+        echo enter the id of the item you would like to modify
+	curl -i https://ancient-bastion-34942.herokuapp.com/items
+	read id
+	echo which attribute would you like to modify? to modify info enter i, to modify name enter n, to modify availablilty enter a
+	read option
+		if [ $option == a ]
+		then
+			echo set item to unavailable enter u, set item to available enter a
+			read avail
+			if [ $avail == u ]
+			then
+				curl -i -u $user:$password -H "Content-Type: application/json" -X PUT -d '{"unavailable":true}' https://ancient-bastion-34942.herokuapp.com/items/$id
+			fi
+			if [ $avail == a ] 
+			then 
+				curl -i -u $user:$password -H "Content-Type: application/json" -X PUT -d '{"unavailable":false}' https://ancient-bastion-34942.herokuapp.com/items/$id
+			fi
+		fi
+		if [ $option == i ]
+		then
+			echo please enter the new description for the item
+			read desc
+			curl -i -u $user:$password -H "Content-Type: application/json" -X PUT -d '{"info":"'"$desc"'"}' https://ancient-bastion-34942.herokuapp.com/items/$id
+		fi
+		if [ $option == n ]
+		then
+			echo please enter the new name for the item
+			read name
+			curl -i -u $user:$password -H "Content-Type: application/json" -X PUT -d '{"name":"'"$name"'"}' https://ancient-bastion-34942.herokuapp.com/items/$id
+		fi
+
+fi
+if [ $varname == po ]
+then
+echo please input item name
+read name
+echo please input description of order
+read desc
+curl -i  -H "Content-Type: application/json" -X POST -d '{"item":"'"$name"'", "info":"'"$desc"'"}' https://ancient-bastion-34942.herokuapp.com/orders    
+fi
+
+if [ $varname == vo ]
+then
+curl -i https://ancient-bastion-34942.herokuapp.com/orders
+fi
+
+if [ $varname != a ] && [ $varname != s ] && [ $varname != d ] && [ $varname != m ] && [ $varname != vo ] && [ $varname != po ]
+then
+        echo please choose one of the options
+fi
+echo "Done"
+

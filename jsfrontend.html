@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>order bot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <!-defult botui styles->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/botui/build/botui.min.css" /> 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/botui/build/botui-theme-default.css" />
+  </head>
+  <body>
+    <div class="botui-app-container" id="order_bot">
+      <bot-ui></bot-ui>
+    </div>
+    <script src="https://cdn.jsdelivr.net/vue/latest/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/botui/build/botui.js"></script>
+    <script>
+
+ 
+    
+    var botui = new BotUI('order_bot');
+    var displayList = ""; //a list for storing the objects loaded
+    var information = ""; //order information to be sent
+    var choices = []; //options for ordering
+    load(); //loads items so that items are refreshed each time it is called  
+    botui.message.add({ //bot greets the customer
+        content: "Hello and welcome to XCOMPANY"
+     })    
+    botui.message.add({ //bot adds message
+        content: 'please choose an option for the action you would like to take'
+    }).then(function() {
+        botui.action.select({ //choose between 'view' or 'order'
+            action: {
+              placeholder : "Select An Option", 
+              value: "or", // default selected value
+              multipleselect : false,
+              options : [
+                {value: "or", text : "Order Items" },
+                {value: "vi", text : "View Items" },
+              ],
+              button: {
+              icon: 'check',
+              label: 'OK'
+              }
+            }
+        }).then(function (res) { // will be called when a button is clicked.
+            if (res.value === 'vi'){ //if customer chooses to view item
+              viewItems(displayList);
+            }
+            else if (res.value === 'or'){ //if customer chooses to order items
+              orderItems(displayList);
+            }
+            });
+        }) 
+    function orderItems(list){ //order function takes in a list of options and sends order
+      botui.message.add({//bot message
+        delay: 500,
+        content: 'please place your order'
+
+      }).then(function() {
+        var temp = list.split("+=+"); //split string into items
+        for (i=0;i<temp.length-1;i++){ //puts items into menu
+        var temp_dict = {value: temp[i].substring(0,2), text: temp[i]}; //formats in the form of a dictionary
+        choices.push(temp_dict); //adds names of items as options from drop down menu
+        }
+        botui.action.select({
+            action: {
+              placeholder : "Select An Option", 
+              multipleselect : true,
+              value: choices[0].value, // default selected value is first item in choices
+              options : choices,
+              button: {
+                icon: 'check',
+                label: 'Select'
+              }
+            }
+        }).then(function(res) {
+        botui.message.add({//bot message
+        delay: 500,
+        content: "you have selected the following items: " + res.text
+
+          }).then(function() {
+                info(res);
+            })
+          })
+      })
+    }
+    function viewItems(str){ //view item option takes in items and prints them using the bot ui
+      botui.message.add({//bot message
+        delay: 500,
+        content: 'here are the items available'
+      }).then(function() {
+          var step = str.split("+=+");
+          for (i = 0; i< step.length-1; i++) {
+            botui.message.add({
+            content: (i+1) + "." + step[i]//print items
+            })
+          }
+        //
+        })
+      }
+    function load(){ //calls 'GET' to api to load items
+    //function to load items from api
+      var request = new XMLHttpRequest();
+      var url = 'http://127.0.0.1:5000/items '//hosted api 
+      request.open('GET', url);
+      request.onload = function () {
+        var jsonResponse = JSON.parse(request.response);
+        jsonResponse.items.forEach(item => {
+        //jsonResponse.forEach(item => {
+        //displayList += item.name; //stores item data into a string
+          displayList += item.name; //stores item data into a string
+          displayList += "+=+"; //for use in split array later
+      });
+    }
+    request.send();
+}
+    function post(item, info){ //calls 'POST' to api to post items
+      var itemstr = "";
+      //function to load items from api
+      var request = new XMLHttpRequest();
+        var url = 'http://127.0.0.1:5000/orders'//orders url of api
+        request.open('POST', url);
+        request.setRequestHeader("Content-Type", "application/json");
+        var data = {"item":item, "info":info }; 
+        request.onreadystatechange = function () {
+        }
+        request.send(data);
+        botui.message.add({
+          content: "thank you for your order." //thanks the customer
+        })
+    }
+    function email(){ //asks and checks for email and stores
+    botui.action.text({
+              action: {
+              sub_type: 'email', //checks for input type email
+              placeholder: 'Please enter your email.'
+              }
+            }).then(function(res) {
+              information += " contact info: " + res.value;
+              botui.message.add({
+                content:"please enter any additional information"
+              })
+              botui.action.text({ //ask for additional information
+                action: {
+                  sub_type: 'text',
+                  placeholder: 'additional info'
+                }
+                }).then(function(res) {
+                  if (res === ""){
+                    botui.message.add({
+                    content:"warning you have entered no additional information"
+                  })
+
+                  }
+                  information += " additional info: " + res.value; // add additional information to api
+                  post(name.text, information);
+                }); 
+            });
+    }  
+    function other(){ //asks for text field and stores
+      botui.action.text({
+              action: {
+              sub_type: 'text',
+              placeholder: 'Please enter info'
+              }
+            }).then(function(res) {
+              information += " contact info: " + res.value;
+              botui.message.add({
+                content:"please enter any additional information" 
+              })
+              botui.action.text({
+                action: {
+                  sub_type: 'text',
+                  placeholder: 'additional info'
+                }
+                }).then(function(res) {
+                  information += " additional info: " + res.value;
+                  post(name.text, information);
+                }); 
+            }); 
+    }
+    function info(name){// asks for quantity, contact information, then posts information
+      botui.message.add({//bot message
+              delay: 500,
+              content: "please choose a method of contact"});
+            botui.action.select({
+              action: {
+                placeholder : "Select An Option", 
+                multipleselect : false,
+                options : [
+                  {value: "em", text : "Email" },
+                  {value: "ot", text: "Other" }
+                ],
+                button: {
+                  icon: 'check',
+                  label: 'Select'
+                }
+              } 
+            }).then(function(res2){// depending on what the user places chooses as contact information asks for input
+              if (res2.value === "em"){
+                email();
+              }
+              else if (res2.value === "ot"){
+                other();
+              }
+            })
+    }
+
+
+    </script>
+  </body>
+</html>
